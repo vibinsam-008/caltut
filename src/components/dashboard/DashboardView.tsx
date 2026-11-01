@@ -117,7 +117,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-600/30 transition-all cursor-pointer"
             >
               <UploadCloud className="w-4 h-4 text-emerald-200" />
-              <span>Provide Syllabus & Start Tutoring</span>
+              <span>Change Regulations & Syllabus</span>
             </button>
 
             <button

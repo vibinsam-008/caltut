@@ -16,8 +16,16 @@ import { MockTestView } from './components/exam/MockTestView';
 import { ProgressDashboard } from './components/progress/ProgressDashboard';
 import { SettingsView } from './components/settings/SettingsView';
 import { SyllabusIntakeModal } from './components/curriculum/SyllabusIntakeModal';
+import { RegulationsSyllabusGate } from './components/curriculum/RegulationsSyllabusGate';
 
 export default function App() {
+  const [isSyllabusConfigured, setIsSyllabusConfigured] = useState<boolean>(() => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return window.localStorage.getItem('mit_calculus_configured') === 'true';
+    }
+    return false;
+  });
+  const [isGateModalOpen, setIsGateModalOpen] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<ActiveNavTab>('dashboard');
   const [isSyllabusModalOpen, setIsSyllabusModalOpen] = useState<boolean>(false);
   const [curriculum, setCurriculum] = useState<CourseCurriculum>(
@@ -68,7 +76,10 @@ export default function App() {
     }
   };
 
-  const handleSyllabusProcessedAndStartTutoring = (newCurr: CourseCurriculum) => {
+  const handleSyllabusProcessedAndStartTutoring = (
+    newCurr: CourseCurriculum,
+    destination: 'dashboard' | 'learn' = 'learn'
+  ) => {
     curriculumManager.registerCurriculum(newCurr);
     curriculumManager.setActiveCurriculum(newCurr.courseId);
     setCurriculum(newCurr);
@@ -88,8 +99,22 @@ export default function App() {
       }
     }
 
-    // Immediately launch the personalized tutoring process
-    setActiveTab('learn');
+    setIsSyllabusConfigured(true);
+    setIsGateModalOpen(false);
+    setIsSyllabusModalOpen(false);
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem('mit_calculus_configured', 'true');
+    }
+
+    setActiveTab(destination);
+  };
+
+  const handleResetRegulationsGate = () => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.removeItem('mit_calculus_configured');
+    }
+    setIsSyllabusConfigured(false);
+    setActiveTab('dashboard');
   };
 
   const handleSelectLesson = (unitId: string, topicId: string) => {
@@ -127,6 +152,19 @@ export default function App() {
     setLearnerState(freshEngine.getState());
   };
 
+  // Mandatory Regulations and Syllabus intake gate:
+  // Must be asked first before entering into the dashboard
+  if (!isSyllabusConfigured) {
+    return (
+      <RegulationsSyllabusGate
+        initialCurriculum={curriculum}
+        onConfirmAndEnter={(approvedCurr, destination) => {
+          handleSyllabusProcessedAndStartTutoring(approvedCurr, destination || 'dashboard');
+        }}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
       {/* Top Main Navigation */}
@@ -134,7 +172,7 @@ export default function App() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         activeCurriculum={curriculum}
-        onOpenSyllabusIntake={() => setIsSyllabusModalOpen(true)}
+        onOpenSyllabusIntake={() => setIsGateModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -151,7 +189,7 @@ export default function App() {
               if (p) setActiveProblem(p);
             }}
             onSelectLesson={handleSelectLesson}
-            onOpenSyllabusIntake={() => setIsSyllabusModalOpen(true)}
+            onOpenSyllabusIntake={() => setIsGateModalOpen(true)}
           />
         )}
 
@@ -244,6 +282,7 @@ export default function App() {
             curriculum={curriculum}
             learnerState={learnerState}
             onResetLearnerState={handleResetLearnerState}
+            onResetRegulationsGate={handleResetRegulationsGate}
           />
         )}
       </main>
@@ -254,9 +293,23 @@ export default function App() {
           MIT Calculus Tutor • Madras Institute of Technology (Anna University), Chromepet • Department of Mathematics
         </p>
         <p className="text-[11px] text-slate-600 mt-0.5">
-          Regulation 2021 MA3151: Matrices and Calculus • Verified Symbolic & Quadrature Math Engine
+          {curriculum.regulations} • {curriculum.code}: {curriculum.title} • Verified Symbolic & Quadrature Math Engine
         </p>
       </footer>
+
+      {/* Regulations & Syllabus Intake Gate Overlay */}
+      {isGateModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950 overflow-y-auto">
+          <RegulationsSyllabusGate
+            initialCurriculum={curriculum}
+            isDismissable={true}
+            onDismiss={() => setIsGateModalOpen(false)}
+            onConfirmAndEnter={(approvedCurr, destination) => {
+              handleSyllabusProcessedAndStartTutoring(approvedCurr, destination || 'dashboard');
+            }}
+          />
+        </div>
+      )}
 
       {/* Syllabus Ingestion & Tutoring Launch Modal */}
       <SyllabusIntakeModal

@@ -214,6 +214,7 @@ export class CurriculumManager {
       institution?: string;
       department?: string;
       semester?: number;
+      regulations?: string;
     }
   ): CurriculumExtractionResult {
     const lines = rawText.split('\n').map((l) => l.trim()).filter(Boolean);
@@ -365,7 +366,7 @@ export class CurriculumManager {
       institution: metadata.institution || 'Madras Institute of Technology',
       department: metadata.department || 'Computer Science and Engineering',
       semester: metadata.semester || 1,
-      regulations: 'Regulation 2021 / Model Syllabus',
+      regulations: metadata.regulations || 'Regulation 2021 / Model Syllabus',
       syllabusVersion: `draft-${new Date().toISOString().slice(0, 10)}`,
       approvalStatus: 'draft',
       sourceDocuments: [

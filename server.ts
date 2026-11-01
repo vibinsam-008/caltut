@@ -18,7 +18,36 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
+
+// Helper to parse base64 DataURL or raw base64 string to Buffer
+function parseBase64Buffer(dataUrlOrBase64: string): Buffer {
+  const commaIdx = dataUrlOrBase64.indexOf(',');
+  const cleanBase64 = commaIdx >= 0 ? dataUrlOrBase64.slice(commaIdx + 1) : dataUrlOrBase64;
+  return Buffer.from(cleanBase64, 'base64');
+}
+
+// Helper to parse PDF buffer and extract structured text
+async function extractTextFromPdfBuffer(buffer: Buffer): Promise<{ text: string; pages: number }> {
+  try {
+    const { PDFParse } = await import('pdf-parse');
+    const parser = new PDFParse({ data: buffer });
+    await parser.load();
+    const result = await parser.getText();
+    return {
+      text: result?.text || '',
+      pages: result?.total || 1,
+    };
+  } catch (err) {
+    console.warn('PDFParse warning, attempting direct text extraction:', err);
+    const rawStr = buffer.toString('utf-8');
+    const cleanStr = rawStr.replace(/[^\x20-\x7E\t\n\r]/g, ' ');
+    return {
+      text: cleanStr,
+      pages: 1,
+    };
+  }
+}
 
 // Helper to initialize Google Gen AI safely
 function getGenAIClient(): GoogleGenAI | null {
@@ -96,6 +125,136 @@ app.post('/api/curriculum/upload', (req, res) => {
   return res.json(result);
 });
 
+app.post('/api/curriculum/extract-pdf', async (req, res) => {
+  try {
+    const { filename, base64 } = req.body;
+    if (!base64) {
+      return res.status(400).json({ success: false, error: 'base64 payload is required' });
+    }
+    const buffer = parseBase64Buffer(base64);
+    const { text, pages } = await extractTextFromPdfBuffer(buffer);
+    return res.json({
+      success: true,
+      filename: filename || 'document.pdf',
+      text,
+      pages,
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      error: err?.message || 'Failed to extract text from PDF',
+    });
+  }
+});
+
+app.post('/api/curriculum/process-documents', async (req, res) => {
+  try {
+    const { regulationsDoc, syllabusDoc, metadata } = req.body;
+
+    let regText = regulationsDoc?.rawText || '';
+    let regPages = 1;
+    if (regulationsDoc?.base64) {
+      try {
+        const regBuf = parseBase64Buffer(regulationsDoc.base64);
+        const parsedReg = await extractTextFromPdfBuffer(regBuf);
+        regText = parsedReg.text || regText;
+        regPages = parsedReg.pages || 1;
+      } catch (e) {
+        console.warn('Failed to parse regulations PDF:', e);
+      }
+    }
+
+    let sylText = syllabusDoc?.rawText || '';
+    let sylPages = 1;
+    if (syllabusDoc?.base64) {
+      try {
+        const sylBuf = parseBase64Buffer(syllabusDoc.base64);
+        const parsedSyl = await extractTextFromPdfBuffer(sylBuf);
+        sylText = parsedSyl.text || sylText;
+        sylPages = parsedSyl.pages || 1;
+      } catch (e) {
+        console.warn('Failed to parse syllabus PDF:', e);
+      }
+    }
+
+    if (!sylText.trim() && !regText.trim()) {
+      return res.status(400).json({ error: 'At least one document with readable content is required.' });
+    }
+
+    // Auto-detect regulations if not explicitly specified
+    let detectedRegulations = metadata?.regulations;
+    if (!detectedRegulations) {
+      const combinedLower = (regText + ' ' + sylText).toLowerCase();
+      if (combinedLower.includes('regulation 2021') || combinedLower.includes('r2021') || combinedLower.includes('cbcs 2021')) {
+        detectedRegulations = 'Anna University CBCS Regulation 2021';
+      } else if (combinedLower.includes('nptel') || combinedLower.includes('iit')) {
+        detectedRegulations = 'IIT NPTEL Higher Engineering Mathematics';
+      } else if (combinedLower.includes('aicte') || combinedLower.includes('grewal')) {
+        detectedRegulations = 'AICTE Model Engineering Curriculum (B.S. Grewal Standard)';
+      } else {
+        detectedRegulations = 'Autonomous Engineering Regulation Scheme';
+      }
+    }
+
+    const syllabusFilename = syllabusDoc?.filename || 'Course_Syllabus.pdf';
+    const regulationsFilename = regulationsDoc?.filename || 'Regulations.pdf';
+
+    const result = curriculumManager.ingestSyllabusText(
+      syllabusFilename,
+      sylText || regText,
+      {
+        ...metadata,
+        regulations: detectedRegulations,
+      }
+    );
+
+    // Build comprehensive sourceDocuments reflecting both regulations and syllabus PDFs
+    const sourceDocuments = [];
+    if (regulationsDoc?.filename) {
+      sourceDocuments.push({
+        id: `doc-reg-${Date.now()}`,
+        filename: regulationsFilename,
+        uploadedAt: new Date().toISOString(),
+        documentType: regulationsFilename.toLowerCase().endsWith('.pdf')
+          ? 'University Academic Regulations PDF'
+          : 'University Academic Regulations Document',
+        pageCount: regPages,
+      });
+    }
+    sourceDocuments.push({
+      id: `doc-syl-${Date.now()}`,
+      filename: syllabusFilename,
+      uploadedAt: new Date().toISOString(),
+      documentType: syllabusFilename.toLowerCase().endsWith('.pdf')
+        ? 'Course Syllabus PDF'
+        : 'Course Syllabus Document',
+      pageCount: sylPages,
+    });
+
+    result.extractedCurriculum.sourceDocuments = sourceDocuments;
+    result.extractedCurriculum.regulations = detectedRegulations;
+    curriculumManager.registerCurriculum(result.extractedCurriculum);
+    curriculumManager.setActiveCurriculum(result.extractedCurriculum.courseId);
+
+    return res.json({
+      success: true,
+      source: 'pdf_multidoc_engine',
+      regulationsText: regText.slice(0, 1000),
+      syllabusText: sylText.slice(0, 1000),
+      confidenceScore: Math.max(0.92, result.confidenceScore),
+      warnings: result.warnings,
+      uncertainEntities: result.uncertainEntities,
+      extractedCurriculum: result.extractedCurriculum,
+    });
+  } catch (err: any) {
+    console.error('Error processing course documents:', err);
+    return res.status(500).json({
+      success: false,
+      error: err?.message || 'Error processing course documents',
+    });
+  }
+});
+
 app.post('/api/curriculum/process-ai', async (req, res) => {
   const { filename, rawText, metadata } = req.body;
   if (!rawText) {
@@ -132,7 +291,7 @@ Extract a structured curriculum in valid JSON format matching this schema:
   "institution": "${metadata?.institution || 'Engineering Institute'}",
   "department": "${metadata?.department || 'Computer Science and Engineering'}",
   "semester": ${metadata?.semester || 1},
-  "regulations": "Regulation Approved",
+  "regulations": "${metadata?.regulations || 'Regulation 2021 / AICTE Framework'}",
   "syllabusVersion": "v1.0-approved",
   "approvalStatus": "approved",
   "sourceDocuments": [

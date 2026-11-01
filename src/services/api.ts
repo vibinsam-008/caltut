@@ -88,7 +88,7 @@ export async function selectCurriculumCourse(courseId: string): Promise<CourseCu
 export async function uploadSyllabusFile(
   filename: string,
   rawText: string,
-  metadata: { courseCode?: string; courseTitle?: string; institution?: string }
+  metadata: { courseCode?: string; courseTitle?: string; institution?: string; regulations?: string }
 ) {
   const res = await fetch('/api/curriculum/upload', {
     method: 'POST',
@@ -98,10 +98,72 @@ export async function uploadSyllabusFile(
   return await res.json();
 }
 
+export interface DocumentUploadPayload {
+  filename: string;
+  base64?: string;
+  rawText?: string;
+  mimeType?: string;
+}
+
+export async function extractPdfText(
+  filename: string,
+  base64: string
+): Promise<{ success: boolean; text: string; pages: number; filename: string; error?: string }> {
+  try {
+    const res = await fetch('/api/curriculum/extract-pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename, base64 }),
+    });
+    return await res.json();
+  } catch (err: any) {
+    return {
+      success: false,
+      text: '',
+      pages: 0,
+      filename,
+      error: err?.message || 'Failed to extract PDF text',
+    };
+  }
+}
+
+export async function processCourseDocuments(payload: {
+  regulationsDoc?: DocumentUploadPayload;
+  syllabusDoc: DocumentUploadPayload;
+  metadata?: {
+    courseCode?: string;
+    courseTitle?: string;
+    institution?: string;
+    department?: string;
+    semester?: number;
+    regulations?: string;
+  };
+}): Promise<{
+  success: boolean;
+  source: string;
+  confidenceScore: number;
+  warnings: string[];
+  extractedCurriculum: CourseCurriculum;
+}> {
+  const res = await fetch('/api/curriculum/process-documents', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return await res.json();
+}
+
 export async function processSyllabusWithAI(
   filename: string,
   rawText: string,
-  metadata?: { courseCode?: string; courseTitle?: string; institution?: string; department?: string; semester?: number }
+  metadata?: {
+    courseCode?: string;
+    courseTitle?: string;
+    institution?: string;
+    department?: string;
+    semester?: number;
+    regulations?: string;
+  }
 ): Promise<{
   success: boolean;
   source: string;

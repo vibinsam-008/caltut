@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CourseCurriculum } from '../../types';
-import { processSyllabusWithAI } from '../../services/api';
+import { processSyllabusWithAI, extractPdfText } from '../../services/api';
 import {
   UploadCloud,
   Sparkles,
@@ -34,6 +34,7 @@ export const SyllabusIntakeModal: React.FC<SyllabusIntakeModalProps> = ({
   const [institution, setInstitution] = useState<string>('Madras Institute of Technology (MIT)');
   const [department, setDepartment] = useState<string>('Computer Science and Engineering');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [isExtractingPdf, setIsExtractingPdf] = useState<boolean>(false);
   const [extractedData, setExtractedData] = useState<{
     confidenceScore: number;
     extractedCurriculum: CourseCurriculum;
@@ -48,12 +49,31 @@ export const SyllabusIntakeModal: React.FC<SyllabusIntakeModalProps> = ({
     if (!file) return;
     setFilename(file.name);
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = event.target?.result as string;
-      setInputText(content);
-    };
-    reader.readAsText(file);
+    if (file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf') {
+      setIsExtractingPdf(true);
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const base64 = event.target?.result as string;
+        try {
+          const res = await extractPdfText(file.name, base64);
+          if (res.text) {
+            setInputText(res.text);
+          }
+        } catch (err) {
+          console.warn('PDF extraction failed, using fallback:', err);
+        } finally {
+          setIsExtractingPdf(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const content = event.target?.result as string;
+        setInputText(content);
+      };
+      reader.readAsText(file);
+    }
   };
 
   const loadMITTemplate = () => {

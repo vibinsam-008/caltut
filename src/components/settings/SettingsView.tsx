@@ -14,22 +14,32 @@ interface SettingsViewProps {
   curriculum: CourseCurriculum;
   learnerState: LearnerState;
   onResetLearnerState: () => void;
+  onResetRegulationsGate?: () => void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
   curriculum,
   learnerState,
   onResetLearnerState,
+  onResetRegulationsGate,
 }) => {
   const [speechRate, setSpeechRate] = useState<number>(1.0);
   const [tolerance, setTolerance] = useState<number>(0.05);
   const [resetSuccess, setResetSuccess] = useState<boolean>(false);
+  const [gateResetSuccess, setGateResetSuccess] = useState<boolean>(false);
 
   const handleReset = () => {
     if (confirm('Are you sure you want to reset your learner evidence state?')) {
       onResetLearnerState();
       setResetSuccess(true);
       setTimeout(() => setResetSuccess(false), 3000);
+    }
+  };
+
+  const handleResetGate = () => {
+    if (confirm('Return to the mandatory Regulations and Syllabus intake gate?')) {
+      onResetRegulationsGate?.();
+      setGateResetSuccess(true);
     }
   };
 
@@ -129,6 +139,32 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <p className="text-xs text-emerald-400 flex items-center gap-1 mt-2">
               <CheckCircle2 className="w-4 h-4" />
               <span>Learner state reset successfully.</span>
+            </p>
+          )}
+        </div>
+
+        {/* Regulations & Syllabus Intake Reset */}
+        <div className="space-y-3 pt-6 border-t border-slate-800">
+          <h2 className="text-sm font-bold text-slate-200 flex items-center gap-2 text-indigo-400">
+            <ShieldCheck className="w-4 h-4" />
+            <span>Academic Regulations & Syllabus Onboarding Gate</span>
+          </h2>
+          <p className="text-slate-400">
+            Re-enter the mandatory course regulations and syllabus document ingestion screen to switch universities or change curriculum.
+          </p>
+
+          <button
+            onClick={handleResetGate}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-800 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Re-Enter Regulations & Syllabus Intake Gate</span>
+          </button>
+
+          {gateResetSuccess && (
+            <p className="text-xs text-emerald-400 flex items-center gap-1 mt-2">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Redirecting to intake gate...</span>
             </p>
           )}
         </div>

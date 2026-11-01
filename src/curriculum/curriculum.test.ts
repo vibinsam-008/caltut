@@ -65,3 +65,28 @@ test('CurriculumManager registers and sets active curriculum from processed syll
   assert.equal(manager.getActiveCurriculum().code, 'MATH-USER-101');
 });
 
+test('CurriculumManager ingests syllabus with university regulations metadata', () => {
+  const manager = new CurriculumManager();
+  const sampleSyllabus = `
+    MA3151 - MATRICES AND CALCULUS
+    Regulation 2021 CBCS
+    
+    UNIT I: MATRICES
+    Characteristic equation - Eigenvalues and Eigenvectors - Cayley-Hamilton theorem.
+    
+    UNIT II: FUNCTIONS OF SEVERAL VARIABLES
+    Partial derivatives - Total derivative - Jacobians - Taylor series.
+  `;
+
+  const result = manager.ingestSyllabusText('AnnaUniv_R2021.txt', sampleSyllabus, {
+    courseCode: 'MA3151',
+    courseTitle: 'Matrices and Calculus',
+    institution: 'Anna University / MIT Campus',
+    regulations: 'Anna University CBCS Regulation 2021',
+  });
+
+  assert.equal(result.extractedCurriculum.regulations, 'Anna University CBCS Regulation 2021');
+  assert.equal(result.extractedCurriculum.institution, 'Anna University / MIT Campus');
+  assert.ok(result.extractedCurriculum.units.length >= 2);
+});
+
