@@ -11,16 +11,19 @@ import {
   Activity,
   Mic,
   UploadCloud,
+  FileCheck,
 } from 'lucide-react';
 import { CourseCurriculum } from '../types';
 
 export type ActiveNavTab =
   | 'dashboard'
+  | 'syllabus'
   | 'learn'
+  | 'examples'
   | 'generate'
   | 'guided'
+  | 'exam'
   | 'whiteboard'
-  | 'syllabus'
   | 'progress'
   | 'settings';
 
@@ -39,13 +42,13 @@ export const Navigation: React.FC<NavigationProps> = ({
 }) => {
   const navItems: { id: ActiveNavTab; label: string; icon: React.ReactNode }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: <Activity className="w-4 h-4" /> },
-    { id: 'learn', label: '1. Learn Concept', icon: <BookOpen className="w-4 h-4" /> },
-    { id: 'generate', label: '2. Generate Problems', icon: <Sparkles className="w-4 h-4" /> },
-    { id: 'guided', label: '3. Guided Solutions', icon: <HelpCircle className="w-4 h-4" /> },
-    { id: 'whiteboard', label: '4. Whiteboard', icon: <Layers className="w-4 h-4" /> },
-    { id: 'syllabus', label: 'Syllabus Manager', icon: <ShieldCheck className="w-4 h-4" /> },
+    { id: 'syllabus', label: '1. Syllabus & Regulations', icon: <ShieldCheck className="w-4 h-4" /> },
+    { id: 'learn', label: '2. Concept Mastery', icon: <BookOpen className="w-4 h-4" /> },
+    { id: 'examples', label: '3. Solved Examples', icon: <GraduationCap className="w-4 h-4" /> },
+    { id: 'guided', label: '4. Practice & Solutions', icon: <HelpCircle className="w-4 h-4" /> },
+    { id: 'exam', label: '5. Mock Exam & Key', icon: <FileCheck className="w-4 h-4" /> },
+    { id: 'whiteboard', label: 'Whiteboard', icon: <Layers className="w-4 h-4" /> },
     { id: 'progress', label: 'Progress', icon: <BarChart2 className="w-4 h-4" /> },
-    { id: 'settings', label: 'Settings', icon: <Settings className="w-4 h-4" /> },
   ];
 
   return (

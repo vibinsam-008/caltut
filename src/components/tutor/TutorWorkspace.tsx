@@ -9,6 +9,7 @@ import {
   TeachingAction,
 } from '../../types';
 import { requestTutorTurn } from '../../services/api';
+import { generateTopicPedagogy } from '../../curriculum/topic-pedagogy';
 import { MathView } from '../MathView';
 import { Whiteboard } from '../whiteboard/Whiteboard';
 import { LiveVoiceController } from '../voice/LiveVoiceController';
@@ -29,92 +30,97 @@ import {
 
 interface TutorWorkspaceProps {
   curriculum: CourseCurriculum;
+  initialUnitId?: string;
+  initialTopicId?: string;
   onNavigateToGuidedProblem?: (topicId: string) => void;
   onRecordResult?: (problemId: string, objectiveId: string, isCorrect: boolean, hintsUsed: number) => void;
 }
 
 export const TutorWorkspace: React.FC<TutorWorkspaceProps> = ({
   curriculum,
+  initialUnitId,
+  initialTopicId,
   onNavigateToGuidedProblem,
   onRecordResult,
 }) => {
-  // Select active unit and topic
-  const [selectedUnitId, setSelectedUnitId] = useState<string>(curriculum.units[4]?.id || curriculum.units[0]?.id);
-  const [selectedTopicId, setSelectedTopicId] = useState<string>(
-    curriculum.units[4]?.topics[0]?.id || curriculum.units[0]?.topics[0]?.id
-  );
-  const [selectedObjectiveId, setSelectedObjectiveId] = useState<string>(
-    curriculum.units[4]?.topics[0]?.learningObjectives[0]?.id || ''
-  );
+  // Determine initial unit and topic
+  const initialUnit =
+    (initialUnitId && curriculum.units.find((u) => u.id === initialUnitId)) ||
+    curriculum.units[0];
+  const initialTopic =
+    (initialTopicId && initialUnit?.topics.find((t) => t.id === initialTopicId)) ||
+    initialUnit?.topics[0];
+  const initialObj = initialTopic?.learningObjectives[0];
+
+  const [selectedUnitId, setSelectedUnitId] = useState<string>(initialUnit?.id || '');
+  const [selectedTopicId, setSelectedTopicId] = useState<string>(initialTopic?.id || '');
+  const [selectedObjectiveId, setSelectedObjectiveId] = useState<string>(initialObj?.id || '');
 
   const activeUnit = curriculum.units.find((u) => u.id === selectedUnitId) || curriculum.units[0];
   const activeTopic = activeUnit?.topics.find((t) => t.id === selectedTopicId) || activeUnit?.topics[0];
-  const activeObjective = activeTopic?.learningObjectives.find((o) => o.id === selectedObjectiveId) || activeTopic?.learningObjectives[0];
+  const activeObjective =
+    activeTopic?.learningObjectives.find((o) => o.id === selectedObjectiveId) ||
+    activeTopic?.learningObjectives[0];
+
+  const initialPedagogy = generateTopicPedagogy(activeTopic, activeUnit);
 
   const [studentInput, setStudentInput] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [showVoicePanel, setShowVoicePanel] = useState<boolean>(false);
 
   // Synchronized Whiteboard Spec
-  const [currentWhiteboardSpec, setCurrentWhiteboardSpec] = useState<WhiteboardVisualSpec>({
-    type: 'order_of_integration',
-    title: 'Visualizing Integration Limits and Boundary Curves',
-    xAxisLabel: 'x',
-    yAxisLabel: 'y',
-    xRange: [-0.5, 3.0],
-    yRange: [-0.5, 4.5],
-    functions: [
-      { id: 'f1', expression: 'y = x^2', fnString: 'x^2', color: '#38bdf8', label: 'y = x²' },
-      { id: 'f2', expression: 'y = 2x', fnString: '2*x', color: '#f43f5e', label: 'y = 2x' },
-    ],
-    region: {
-      lowerBoundFn: 'x^2',
-      upperBoundFn: '2*x',
-      xMin: 0,
-      xMax: 2,
-      color: '#6366f1',
-      opacity: 0.35,
-      integrationOrder: 'dy_dx',
-    },
-    points: [
-      { x: 0, y: 0, label: 'Origin (0,0)', color: '#10b981' },
-      { x: 2, y: 4, label: 'Intersection (2,4)', color: '#eab308' },
-    ],
-  });
+  const [currentWhiteboardSpec, setCurrentWhiteboardSpec] = useState<WhiteboardVisualSpec>(
+    initialPedagogy.whiteboardSpec
+  );
 
   // Conversation history
   const [messages, setMessages] = useState<TutorMessage[]>([
-    {
-      id: 'msg-init-1',
-      sender: 'tutor',
-      timestamp: '10:00',
-      actionTaken: 'explain_concept',
-      text: `Welcome to **${activeTopic?.title || 'Engineering Calculus'}**!
-
-In engineering analysis, multiple integrals determine centers of gravity, moments of inertia, and electrostatic flux across complex boundaries.
-
-When you see a double integral like:
-$$\\int_{0}^{2} \\int_{x^2}^{2x} f(x,y) \\, dy \\, dx$$
-
-the inner differential $dy$ means we are slicing the 2D region using **vertical strips**. For each fixed $x$, $y$ enters at the lower parabola $y = x^2$ and exits at the upper line $y = 2x$.
-
-Would you like to examine why and how we reverse this into horizontal strips ($dx\\,dy$)?`,
-      diagnosticQuestion: {
-        question: 'In the integral above, what is the geometric shape of the left-hand boundary curve of the region?',
-        options: [
-          'A straight vertical line x = 0',
-          'A parabola y = x^2',
-          'A horizontal line y = 4',
-          'A circle of radius 2',
-        ],
-        correctIndex: 1,
-        explanation: 'Correct! The lower boundary in vertical strips becomes the right-hand boundary when looking horizontally, while the line y = 2x forms the left-hand boundary.',
-      },
-    },
+    initialPedagogy.initialMessage,
   ]);
 
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [diagnosticFeedback, setDiagnosticFeedback] = useState<string | null>(null);
+
+  // Sync state whenever curriculum or initial lesson props change
+  useEffect(() => {
+    const targetUnit =
+      (initialUnitId && curriculum.units.find((u) => u.id === initialUnitId)) ||
+      curriculum.units.find((u) => u.id === selectedUnitId) ||
+      curriculum.units[0];
+
+    const targetTopic =
+      (initialTopicId && targetUnit?.topics.find((t) => t.id === initialTopicId)) ||
+      targetUnit?.topics.find((t) => t.id === selectedTopicId) ||
+      targetUnit?.topics[0];
+
+    const targetObj = targetTopic?.learningObjectives[0];
+
+    if (targetUnit) setSelectedUnitId(targetUnit.id);
+    if (targetTopic) setSelectedTopicId(targetTopic.id);
+    if (targetObj) setSelectedObjectiveId(targetObj.id);
+
+    if (targetTopic && targetUnit) {
+      const pedagogy = generateTopicPedagogy(targetTopic, targetUnit);
+      setMessages([pedagogy.initialMessage]);
+      setCurrentWhiteboardSpec(pedagogy.whiteboardSpec);
+      setSelectedOption(null);
+      setDiagnosticFeedback(null);
+    }
+  }, [curriculum.courseId, initialUnitId, initialTopicId]);
+
+  // Handler for clicking a topic in the hierarchy
+  const handleSelectTopic = (topic: Topic, unit: Unit) => {
+    setSelectedUnitId(unit.id);
+    setSelectedTopicId(topic.id);
+    const obj = topic.learningObjectives[0];
+    if (obj) setSelectedObjectiveId(obj.id);
+
+    const pedagogy = generateTopicPedagogy(topic, unit);
+    setMessages([pedagogy.initialMessage]);
+    setCurrentWhiteboardSpec(pedagogy.whiteboardSpec);
+    setSelectedOption(null);
+    setDiagnosticFeedback(null);
+  };
 
   // Send student prompt to tutor
   const handleSendMessage = async (customMessage?: string, action: TeachingAction = 'explain_concept') => {
@@ -263,12 +269,7 @@ Would you like to examine why and how we reverse this into horizontal strips ($d
                     {unit.topics.map((topic) => (
                       <div key={topic.id} className="space-y-0.5">
                         <button
-                          onClick={() => {
-                            setSelectedTopicId(topic.id);
-                            if (topic.learningObjectives[0]) {
-                              setSelectedObjectiveId(topic.learningObjectives[0].id);
-                            }
-                          }}
+                          onClick={() => handleSelectTopic(topic, unit)}
                           className={`w-full text-left px-2 py-1 rounded text-xs transition-colors ${
                             selectedTopicId === topic.id
                               ? 'bg-indigo-950/80 text-indigo-200 font-medium border border-indigo-800'
@@ -321,8 +322,10 @@ Would you like to examine why and how we reverse this into horizontal strips ($d
           {/* Header */}
           <div className="pb-3 border-b border-slate-800 flex items-center justify-between">
             <div>
-              <span className="text-xs font-bold text-slate-200">{activeTopic?.title}</span>
-              <p className="text-[11px] text-slate-400 mt-0.5">Objective: {activeObjective?.title}</p>
+              <span className="text-xs font-bold text-slate-200">{activeTopic?.title || 'Calculus Lesson'}</span>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Objective: {activeObjective?.title || `Master ${activeTopic?.title || 'Core Calculus'}`}
+              </p>
             </div>
             <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-900">
               Adaptive Policy

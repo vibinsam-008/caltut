@@ -81,6 +81,51 @@ Double integrals - Change of order of integration - Double integrals in polar co
 Prerequisites: Pre-calculus, algebra, basic trigonometric identities`);
   };
 
+  const loadIITTemplate = () => {
+    setCourseCode('IIT-MATH-101');
+    setCourseTitle('Multivariable Calculus and Linear Algebra');
+    setInstitution('Indian Institute of Technology (IIT) / NPTEL');
+    setDepartment('Department of Mathematics');
+    setInputText(`IIT-MATH-101: MULTIVARIABLE CALCULUS AND LINEAR ALGEBRA
+(National Programme on Technology Enhanced Learning - NPTEL IIT Modules)
+
+UNIT I: FUNCTIONS OF SEVERAL VARIABLES
+Limit, continuity, and differentiability of functions of several variables - Partial derivatives - Directional derivatives - Gradient vector - Tangent plane and normal line - Total differential - Chain rule - Taylor's theorem for functions of two variables - Extreme values and saddle points - Lagrange multipliers.
+
+UNIT II: MULTIPLE INTEGRALS AND APPLICATIONS
+Double integrals over general domains - Change of order of integration - Double integrals in polar coordinates - Triple integrals in cylindrical and spherical coordinates - Change of variables using Jacobians - Surface area of revolution - Volume, mass, and center of gravity of solids.
+
+UNIT III: VECTOR DIFFERENTIAL AND INTEGRAL CALCULUS
+Scalar and vector fields - Divergence and curl - Vector differential identities - Irrotational and solenoidal fields - Line integrals - Conservative fields and scalar potentials - Green's theorem in the plane - Surface integrals and flux - Gauss divergence theorem - Stokes' theorem and circulation.
+
+UNIT IV: MATRICES AND SPECTRAL THEORY
+Systems of linear equations - Rank and nullity - Eigenvalues and eigenvectors of real matrices - Cayley-Hamilton theorem - Orthogonal diagonalization of real symmetric matrices - Quadratic forms and classification.`);
+  };
+
+  const loadBSGrewalTemplate = () => {
+    setCourseCode('ENG-MATH-44');
+    setCourseTitle('Higher Engineering Mathematics (B.S. Grewal Edition)');
+    setInstitution('AICTE National Engineering Curriculum');
+    setDepartment('Engineering Sciences & Applied Mathematics');
+    setInputText(`ENG-MATH-44: HIGHER ENGINEERING MATHEMATICS (B.S. GREWAL 44TH EDITION)
+(Approved National Engineering Framework)
+
+UNIT I: LINEAR ALGEBRA AND MATRICES
+Rank of a matrix - Consistency of linear system of equations - Characteristic equation - Eigenvalues and Eigenvectors - Cayley-Hamilton theorem and matrix powers - Orthogonal transformation - Diagonalization of symmetric matrices - Quadratic forms and canonical reduction.
+
+UNIT II: DIFFERENTIAL CALCULUS AND SEVERAL VARIABLES
+Higher order partial derivatives - Euler's theorem on homogeneous functions - Total differential - Jacobians of transformations - Taylor and Maclaurin expansions for two variables - Maxima and minima of functions of two variables - Lagrange's method of undetermined multipliers.
+
+UNIT III: INTEGRAL CALCULUS AND SPECIAL FUNCTIONS
+Beta and Gamma functions and their essential properties - Error functions - Definite integrals as limits of sums - Differentiation under the integral sign (Leibnitz rule) - Evaluation of improper integrals.
+
+UNIT IV: MULTIPLE INTEGRALS
+Double integrals in Cartesian and Polar coordinates - Change of order of integration - Area of plane curves - Triple integrals - Volume of solids of revolution - Dirichlet's integrals and applications.
+
+UNIT V: VECTOR CALCULUS
+Gradient of a scalar field - Directional derivative - Divergence and curl of vector fields - Vector identities - Line, surface, and volume integrals - Verification and applications of Green's theorem, Gauss divergence theorem, and Stokes' theorem.`);
+  };
+
   const handleProcessSyllabus = async () => {
     if (!inputText.trim()) {
       setErrorMsg('Please paste or upload your syllabus text before processing.');
@@ -116,7 +161,13 @@ Prerequisites: Pre-calculus, algebra, basic trigonometric identities`);
 
   const handleConfirmAndStartTutoring = () => {
     if (extractedData?.extractedCurriculum) {
-      onSyllabusProcessedAndStartTutoring(extractedData.extractedCurriculum);
+      const approved: CourseCurriculum = {
+        ...extractedData.extractedCurriculum,
+        approvalStatus: 'approved',
+        approvedBy: 'Student Course Intake & Academic Review',
+        approvalDate: new Date().toISOString().slice(0, 10),
+      };
+      onSyllabusProcessedAndStartTutoring(approved);
       onClose();
     }
   };
@@ -192,14 +243,33 @@ Prerequisites: Pre-calculus, algebra, basic trigonometric identities`);
                   />
                 </label>
 
-                <button
-                  type="button"
-                  onClick={loadMITTemplate}
-                  className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1 cursor-pointer"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Insert MIT Anna University MA3151 Syllabus</span>
-                </button>
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  <span className="text-[11px] text-slate-400 font-semibold mr-1">Load Standard Authority:</span>
+                  <button
+                    type="button"
+                    onClick={loadMITTemplate}
+                    className="text-[11px] px-2.5 py-1 rounded-md bg-indigo-950/70 hover:bg-indigo-900 border border-indigo-800 text-indigo-300 font-medium flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <Sparkles className="w-3 h-3 text-amber-400" />
+                    <span>Anna Univ / MIT (MA3151)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={loadIITTemplate}
+                    className="text-[11px] px-2.5 py-1 rounded-md bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-800 text-cyan-300 font-medium flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <BookOpen className="w-3 h-3 text-cyan-400" />
+                    <span>IIT NPTEL Calculus</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={loadBSGrewalTemplate}
+                    className="text-[11px] px-2.5 py-1 rounded-md bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-800 text-emerald-300 font-medium flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <GraduationCap className="w-3 h-3 text-emerald-400" />
+                    <span>B.S. Grewal (44th Ed)</span>
+                  </button>
+                </div>
               </div>
 
               {/* Text Area */}

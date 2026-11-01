@@ -11,6 +11,8 @@ import { ProblemGeneratorView } from './components/problems/ProblemGeneratorView
 import { GuidedSolutionView } from './components/guided/GuidedSolutionView';
 import { Whiteboard } from './components/whiteboard/Whiteboard';
 import { SyllabusManagerView } from './components/curriculum/SyllabusManagerView';
+import { SolvedExamplesView } from './components/examples/SolvedExamplesView';
+import { MockTestView } from './components/exam/MockTestView';
 import { ProgressDashboard } from './components/progress/ProgressDashboard';
 import { SettingsView } from './components/settings/SettingsView';
 import { SyllabusIntakeModal } from './components/curriculum/SyllabusIntakeModal';
@@ -30,20 +32,45 @@ export default function App() {
   const [activeProblem, setActiveProblem] = useState<CalculusProblem>(
     VERIFIED_STANDARD_PROBLEMS[0]
   );
+  const [activeUnitId, setActiveUnitId] = useState<string>(
+    curriculum.units[0]?.id || ''
+  );
+  const [activeTopicId, setActiveTopicId] = useState<string>(
+    curriculum.units[0]?.topics[0]?.id || ''
+  );
 
   // Sync state from engines
   useEffect(() => {
-    setCurriculum(curriculumManager.getActiveCurriculum());
+    const activeCurr = curriculumManager.getActiveCurriculum();
+    setCurriculum(activeCurr);
     setAllCurricula(curriculumManager.getAllCurricula());
     setLearnerState(teachingEngine.getState());
+
+    if (activeCurr.units[0]) {
+      setActiveUnitId(activeCurr.units[0].id);
+      if (activeCurr.units[0].topics[0]) {
+        setActiveTopicId(activeCurr.units[0].topics[0].id);
+      }
+    }
   }, []);
 
   const handleCurriculumUpdated = (newCurr: CourseCurriculum) => {
+    curriculumManager.registerCurriculum(newCurr);
+    curriculumManager.setActiveCurriculum(newCurr.courseId);
     setCurriculum(newCurr);
     setAllCurricula(curriculumManager.getAllCurricula());
+
+    const firstUnit = newCurr.units[0];
+    const firstTopic = firstUnit?.topics[0];
+    if (firstUnit && firstTopic) {
+      setActiveUnitId(firstUnit.id);
+      setActiveTopicId(firstTopic.id);
+    }
   };
 
   const handleSyllabusProcessedAndStartTutoring = (newCurr: CourseCurriculum) => {
+    curriculumManager.registerCurriculum(newCurr);
+    curriculumManager.setActiveCurriculum(newCurr.courseId);
     setCurriculum(newCurr);
     setAllCurricula(curriculumManager.getAllCurricula());
 
@@ -52,13 +79,31 @@ export default function App() {
     const firstTopic = firstUnit?.topics[0];
     const firstObj = firstTopic?.learningObjectives[0];
 
-    if (firstUnit && firstTopic && firstObj) {
-      teachingEngine.setTopic(firstUnit.id, firstTopic.id, firstObj.id);
-      setLearnerState(teachingEngine.getState());
+    if (firstUnit && firstTopic) {
+      setActiveUnitId(firstUnit.id);
+      setActiveTopicId(firstTopic.id);
+      if (firstObj) {
+        teachingEngine.setTopic(firstUnit.id, firstTopic.id, firstObj.id);
+        setLearnerState(teachingEngine.getState());
+      }
     }
 
     // Immediately launch the personalized tutoring process
     setActiveTab('learn');
+  };
+
+  const handleSelectLesson = (unitId: string, topicId: string) => {
+    setActiveUnitId(unitId);
+    setActiveTopicId(topicId);
+
+    const unit = curriculum.units.find((u) => u.id === unitId);
+    const topic = unit?.topics.find((t) => t.id === topicId);
+    const obj = topic?.learningObjectives[0];
+
+    if (unit && topic && obj) {
+      teachingEngine.setTopic(unit.id, topic.id, obj.id);
+      setLearnerState(teachingEngine.getState());
+    }
   };
 
   const handleRecordProblemResult = (
@@ -98,11 +143,14 @@ export default function App() {
           <DashboardView
             curriculum={curriculum}
             learnerState={learnerState}
+            activeUnitId={activeUnitId}
+            activeTopicId={activeTopicId}
             onNavigate={setActiveTab}
             onSelectProblem={(id) => {
               const p = VERIFIED_STANDARD_PROBLEMS.find((prob) => prob.id === id);
               if (p) setActiveProblem(p);
             }}
+            onSelectLesson={handleSelectLesson}
             onOpenSyllabusIntake={() => setIsSyllabusModalOpen(true)}
           />
         )}
@@ -110,12 +158,27 @@ export default function App() {
         {activeTab === 'learn' && (
           <TutorWorkspace
             curriculum={curriculum}
+            initialUnitId={activeUnitId}
+            initialTopicId={activeTopicId}
             onNavigateToGuidedProblem={(topicId) => {
-              const matched = VERIFIED_STANDARD_PROBLEMS.find((p) => p.topicId === topicId) || VERIFIED_STANDARD_PROBLEMS[0];
+              const matched =
+                VERIFIED_STANDARD_PROBLEMS.find((p) => p.topicId === topicId) ||
+                VERIFIED_STANDARD_PROBLEMS[0];
               setActiveProblem(matched);
               setActiveTab('guided');
             }}
             onRecordResult={handleRecordProblemResult}
+          />
+        )}
+
+        {activeTab === 'examples' && (
+          <SolvedExamplesView
+            curriculum={curriculum}
+            onLaunchPracticeProblem={handleLaunchGuidedProblem}
+            onNavigateToConcept={(unitId, topicId) => {
+              handleSelectLesson(unitId, topicId);
+              setActiveTab('learn');
+            }}
           />
         )}
 
@@ -137,6 +200,10 @@ export default function App() {
             }}
             onRecordResult={handleRecordProblemResult}
           />
+        )}
+
+        {activeTab === 'exam' && (
+          <MockTestView curriculum={curriculum} />
         )}
 
         {activeTab === 'whiteboard' && (
