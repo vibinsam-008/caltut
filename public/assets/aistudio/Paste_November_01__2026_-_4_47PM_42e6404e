@@ -1,0 +1,741 @@
+# MASTER BUILD PROMPT — AI ENGINEERING CALCULUS TUTOR
+
+## 1. Your role
+
+You are a senior full-stack engineer, AI systems architect, mathematics education researcher, and interactive visualization developer.
+
+Build a functional, curriculum-aware AI Engineering Calculus Tutor for first-semester engineering students, initially targeting first-year CSE students at Madras Institute of Technology (MIT), Chromepet.
+
+This is a real educational application, not a landing-page demo, static chatbot, or collection of hardcoded screens.
+
+The system must teach engineering calculus through conceptual explanations, adaptive questioning, standard problem generation, guided solutions, mathematical visualization, and optional real-time voice interaction.
+
+The primary educational objective is:
+
+**Help students understand mathematical concepts, derive methods, choose appropriate algorithms, and solve unfamiliar problems independently rather than memorize solution patterns.**
+
+Build the application end-to-end. Make reasonable implementation decisions without repeatedly asking the user for approval. Clearly document assumptions and never fabricate syllabus content.
+
+---
+
+## 2. Core product requirements
+
+The application must have five primary learning modes.
+
+### Mode A — Learn a concept
+
+Create an interactive teaching session in which the agent:
+
+1. Identifies the selected topic and its prerequisite concepts.
+2. Diagnoses the student's existing understanding.
+3. Explains the intuition behind the concept before introducing formal notation when appropriate.
+4. Connects graphical, algebraic, numerical, and geometric interpretations.
+5. Breaks complex derivations into meaningful steps.
+6. Asks questions at appropriate points.
+7. Evaluates the student's reasoning rather than only checking the final answer.
+8. Changes its explanation when the student demonstrates confusion.
+9. Offers alternative explanations, examples, and visualizations.
+10. Concludes with an independent problem that tests whether the student can apply the concept.
+
+Never assume that displaying an explanation means the student understands it.
+
+### Mode B — Generate standard problems
+
+Build a dedicated problem-generation interface.
+
+Allow the student to configure:
+
+- Syllabus or course.
+- Unit and topic.
+- Specific learning objective.
+- Difficulty: foundational, standard, challenging, or advanced.
+- Problem format: conceptual, computational, derivation, visualization, or application.
+- Number of problems.
+- Solution visibility: hidden, hints available, guided solution, or full solution.
+- Assessment style: practice, timed mock test, or topic revision.
+
+Generate mathematically valid problems that match the selected syllabus and requested difficulty.
+
+Each generated problem must include an internal structured representation containing:
+
+- Problem statement.
+- Topic and subtopic.
+- Learning objective.
+- Prerequisites.
+- Difficulty rationale.
+- Expected answer or acceptable answer forms.
+- Verified solution method.
+- Important intermediate results.
+- Common misconceptions.
+- Verification method.
+- Source or provenance, where applicable.
+
+Do not generate a problem and invent its answer independently. Generate the problem, derive its solution, verify the result using appropriate mathematical tools, and only then make it available to the student.
+
+If verification fails, repair the problem or regenerate it.
+
+Support both individual problem generation and generation of complete practice sets.
+
+### Mode C — Guided solution
+
+Provide a dedicated interface for students who want help solving a problem.
+
+Use the following progression:
+
+**Stage 1: Understand the problem**
+- Identify the givens, unknowns, constraints, and mathematical objective.
+- Ask the student to interpret the problem where useful.
+
+**Stage 2: Select a strategy**
+- Explain which mathematical ideas may apply.
+- Discuss why the selected method is appropriate.
+- Consider alternative methods when they materially help understanding.
+
+**Stage 3: Derive the solution**
+- Reveal one meaningful step at a time.
+- Explain the mathematical justification for each transformation.
+- Maintain consistency in notation and assumptions.
+- Verify calculations and domain restrictions.
+
+**Stage 4: Diagnose errors**
+- Allow students to submit their own intermediate steps.
+- Identify the earliest incorrect or unjustified step when possible.
+- Distinguish conceptual errors from algebraic, arithmetic, geometric, and notation errors.
+- Explain how to correct the reasoning.
+
+**Stage 5: Verify understanding**
+- Ask the student to explain or complete a critical step.
+- Provide a related problem with different values or a different representation.
+- Assess whether the student can proceed independently.
+
+Include buttons for:
+- Give me a hint.
+- Explain why.
+- Show the next step.
+- Check my step.
+- Show a visual explanation.
+- Reveal the complete solution.
+- Give me a similar problem.
+
+Do not force students to answer every question before revealing a solution. Guided learning should support both active practice and explicit explanation.
+
+### Mode D — Interactive mathematical whiteboard
+
+Create an interactive whiteboard synchronized with the tutor.
+
+The whiteboard must support:
+
+- Mathematical equation rendering.
+- Step-by-step derivations.
+- Cartesian axes and coordinate grids.
+- Plotting supported functions.
+- Curves and boundary visualization.
+- Shaded regions and inequalities.
+- Sliders for changing mathematical parameters.
+- Points, intersections, and boundary annotations.
+- Multiple-integral regions and integration-limit visualization.
+- Reset and undo controls where practical.
+
+When the tutor explains a mathematical transformation, the whiteboard should display the relevant equation, diagram, or region.
+
+When a student changes a supported graph parameter, update the visualization immediately.
+
+Use 2D visualization as the default. Introduce 3D surfaces only where they materially improve understanding.
+
+Do not render arbitrary model-generated JavaScript or execute untrusted code to produce visualizations. Represent visualization instructions as validated structured data and render them through trusted application components.
+
+### Mode E — Live voice tutor
+
+Provide a hybrid voice-and-text tutoring experience.
+
+Required capabilities:
+
+- Start and end a voice session.
+- Speak naturally with the tutor.
+- Receive spoken explanations.
+- Display synchronized equations and diagrams while speaking.
+- Interrupt an explanation with a follow-up question.
+- Switch between voice and text without losing session context.
+- Display transcripts where appropriate.
+- Offer a text-only fallback.
+- Preserve the current learning objective and problem-solving state.
+
+Use a real-time voice API with low-latency audio interaction where available.
+
+The voice model must not independently determine mathematical correctness or bypass the tutoring policy.
+
+The backend remains responsible for session state, tool routing, verification, and learning progression.
+
+Protect API credentials. Use authenticated server-side session initialization and short-lived client credentials where supported.
+
+---
+
+## 3. Syllabus intelligence and curriculum management
+
+This is a core requirement, not an optional feature.
+
+Build a Syllabus Manager that allows students or authorized instructors to upload and manage course documents.
+
+### Supported inputs
+
+Support, where practical:
+
+- PDF syllabi.
+- DOCX documents.
+- Text documents.
+- Course regulations.
+- Instructor-provided notes.
+- Question banks.
+- Assignment sheets.
+- Past examination papers.
+- Instructor-approved worked examples.
+
+For scanned documents, provide OCR or an appropriate extraction pipeline.
+
+### Syllabus ingestion workflow
+
+When a document is uploaded:
+
+1. Extract its text, tables, headings, and available page references.
+2. Preserve the original document and its metadata.
+3. Identify the course, semester, units, topics, subtopics, learning outcomes, and examination structure when explicitly provided.
+4. Identify prerequisite relationships when supported by the document or validated by an instructor.
+5. Detect ambiguous, missing, or conflicting information.
+6. Produce a structured curriculum representation.
+7. Display the extracted structure for review.
+8. Allow an authorized user to correct, approve, reject, or replace extracted information.
+9. Store the approved curriculum with a version number and source references.
+10. Reprocess affected learning resources when the approved syllabus changes.
+
+Do not silently convert uncertain OCR text into authoritative mathematics.
+
+Show source-page references when available so students or instructors can verify extracted content.
+
+### Curriculum representation
+
+Represent each course using a structured model similar to:
+
+{
+  "course_id": "mit_first_sem_engineering_calculus",
+  "institution": "Madras Institute of Technology",
+  "program": "Computer Science and Engineering",
+  "semester": 1,
+  "syllabus_version": "approved-version",
+  "units": [
+    {
+      "unit_id": "unit_identifier",
+      "title": "Verified unit title",
+      "topics": [
+        {
+          "topic_id": "topic_identifier",
+          "title": "Verified topic title",
+          "learning_objectives": [],
+          "prerequisites": [],
+          "source_references": [],
+          "assessment_types": [],
+          "approval_status": "pending"
+        }
+      ]
+    }
+  ]
+}
+
+This is a schema example, not actual MIT syllabus content.
+
+Do not populate the production curriculum with invented unit titles or pretend that the example is the official syllabus.
+
+### Curriculum authority hierarchy
+
+Apply the following source hierarchy:
+
+1. The approved syllabus for the student's specific program, department, semester, and academic year.
+2. Instructor-approved lecture notes and official course instructions.
+3. Instructor-approved assignments, question banks, and examination materials.
+4. Approved textbooks and supplementary academic references.
+5. General mathematical knowledge for explanations and examples.
+
+For this initial deployment, prioritize the actual MIT University Department syllabus applicable to the target CSE cohort. Do not automatically substitute a generic Anna University Centre of Academics syllabus or an unrelated college's curriculum.
+
+If no approved syllabus has been uploaded, explicitly label the curriculum as a draft and request the relevant source document through the interface. Do not claim that the agent has comprehended a syllabus it has never received.
+
+### Syllabus-aware teaching behavior
+
+Once a course is selected, the tutor must:
+
+- Teach within the approved course scope by default.
+- Distinguish required content from supplementary material.
+- Follow the course's stated notation and conventions where known.
+- Map generated problems to relevant learning objectives.
+- Avoid introducing advanced methods prematurely.
+- Generate revision sets based on the selected units.
+- Allow students to choose a topic directly or follow a prerequisite-aware learning path.
+- Explain when a question extends beyond the approved syllabus.
+
+Support multiple courses and syllabus versions without mixing their content.
+
+---
+
+## 4. Adaptive teaching engine
+
+Implement an explicit learner model.
+
+Track:
+
+- Current course, unit, and topic.
+- Current learning objective.
+- Prerequisite evidence.
+- Concepts demonstrated independently.
+- Concepts needing further practice.
+- Observed misconceptions.
+- Previous hints and assistance.
+- Recent assessment outcomes.
+- Current problem and derivation step.
+- Recommended next teaching action.
+
+Do not reduce a student's ability to one arbitrary score.
+
+Use evidence labels such as:
+
+- Not assessed.
+- Uncertain.
+- Demonstrated with assistance.
+- Demonstrated independently.
+- Needs reassessment.
+
+### Teaching policy
+
+Implement a deterministic, inspectable policy that chooses from these teaching actions:
+
+- Explain concept.
+- Give an intuitive example.
+- Ask a diagnostic question.
+- Request a missing derivation step.
+- Provide a hint.
+- Show a graph or geometric representation.
+- Verify a mathematical step.
+- Explain a misconception.
+- Increase or decrease difficulty.
+- Assign a fresh problem.
+- Reassess a prerequisite.
+
+The language model may recommend a teaching action, but the backend must validate the action against the current session state and allowed action schema.
+
+Example:
+
+If the student understands integration notation but cannot reverse the order of a double integral, do not restart the entire chapter. Focus on visualizing the bounded region and deriving the reversed limits.
+
+If the student gets a correct answer through guessing, do not automatically mark the objective as mastered.
+
+If the student repeatedly fails, change the representation or explain the missing prerequisite instead of repeating the same explanation.
+
+---
+
+## 5. Mathematical correctness and verification
+
+Use deterministic mathematical tools wherever possible.
+
+Integrate Python and SymPy for supported symbolic operations, including:
+
+- Differentiation.
+- Indefinite and definite integration.
+- Algebraic simplification.
+- Expression equivalence checks.
+- Supported equation solving.
+- Substitution and intermediate-result verification.
+- Numerical evaluation.
+- Validation of generated problem answers.
+
+For multiple integrals, add specialized validation for:
+
+- Integration bounds.
+- Region constraints.
+- Equivalent descriptions of regions.
+- Reversed integration order.
+- Piecewise integration limits.
+- Domain restrictions and singularities.
+- Consistency between the problem statement, solution, and plotted region.
+
+Do not assume two integrals are equivalent simply because their integrands match.
+
+When changing integration order, validate that the original and proposed bounds describe the same region. Where appropriate, compare numerical evaluations as an additional check, not as universal proof.
+
+Treat symbolic equivalence as a tool with limitations. Use independent checks or instructor review for cases the engine cannot establish reliably.
+
+If a calculation cannot be verified, clearly mark it as unverified rather than inventing certainty.
+
+Restrict mathematical expression parsing to supported constructs. Never pass arbitrary student input directly into unrestricted Python evaluation or shell execution.
+
+---
+
+## 6. Technical architecture
+
+Use a modular, maintainable architecture.
+
+### Frontend
+
+- React.
+- TypeScript.
+- Vite.
+- Tailwind CSS.
+- A reusable accessible component library.
+- KaTeX for mathematical typesetting.
+- JSXGraph or an equivalent trusted 2D mathematics visualization library.
+- A WebRTC-compatible voice client where supported.
+
+Build a responsive desktop-first interface that also works on tablets and phones.
+
+### Backend
+
+- Python.
+- FastAPI.
+- Pydantic for validated request and response models.
+- SymPy for symbolic mathematics.
+- A provider abstraction for language and voice models.
+- A separate tutoring-policy module.
+- A curriculum ingestion and retrieval module.
+- A mathematical verification module.
+
+### Database and persistence
+
+Use PostgreSQL, optionally through Supabase for managed PostgreSQL and authentication.
+
+At minimum, model:
+
+- Users and roles.
+- Courses and syllabus versions.
+- Units, topics, and learning objectives.
+- Source documents and extracted references.
+- Exercises and verified solutions.
+- Tutoring sessions.
+- Student attempts.
+- Mastery evidence.
+- Misconceptions.
+- Instructor review and approval records.
+
+Use access controls so one student cannot read another student's private sessions.
+
+### Suggested project structure
+
+calculus-tutor/
+- frontend/
+  - src/components/
+  - src/features/tutor/
+  - src/features/problems/
+  - src/features/whiteboard/
+  - src/features/curriculum/
+  - src/features/progress/
+  - src/lib/
+- backend/
+  - app/api/
+  - app/tutor/
+  - app/learner_model/
+  - app/curriculum/
+  - app/problem_generator/
+  - app/math_engine/
+  - app/voice/
+  - app/db/
+  - app/schemas/
+  - tests/
+- curriculum/
+  - schemas/
+  - sample_fixtures/
+- docs/
+  - architecture.md
+  - setup.md
+  - curriculum_ingestion.md
+  - testing.md
+
+Modify the structure where appropriate, but preserve clear separation between frontend rendering, AI orchestration, deterministic mathematics, curriculum data, and persistence.
+
+---
+
+## 7. Required user interface
+
+Create a polished, professional educational workspace rather than a generic chat interface.
+
+### Main navigation
+
+Include:
+
+1. Dashboard.
+2. Learn.
+3. Generate Problems.
+4. Guided Solutions.
+5. Practice Tests.
+6. Syllabus Manager.
+7. Progress.
+8. Settings.
+
+Only show administrative syllabus-approval controls to authorized instructors or administrators.
+
+### Learning workspace
+
+Use a flexible layout with:
+
+- Left panel: course, unit, topic, and lesson objectives.
+- Main panel: tutor conversation, explanations, and derivation steps.
+- Right panel: interactive mathematical whiteboard.
+- Bottom or floating controls: voice input, text input, hints, and session actions.
+
+Allow panels to collapse on smaller screens.
+
+### Problem generation screen
+
+Provide filters for syllabus, unit, topic, difficulty, problem type, number of questions, and solution mode.
+
+Display generated problems as individual cards with actions to solve, request a hint, view a guided solution, verify an answer, or add the problem to a practice set.
+
+### Syllabus Manager screen
+
+Display:
+
+- Uploaded files.
+- Processing status.
+- Extracted units and topics.
+- Uncertain extractions.
+- Source references.
+- Approval state.
+- Version history.
+- Actions to edit, approve, reject, or reprocess.
+
+### Student progress screen
+
+Display demonstrated learning objectives, topics requiring practice, completed sessions, and assessment history.
+
+Avoid misleading precision or gamification that rewards activity without evidence of understanding.
+
+---
+
+## 8. Structured AI outputs
+
+Use schema-validated structured outputs for all important tutor actions.
+
+Define a response structure similar to:
+
+{
+  "mode": "guided_solution",
+  "topic_id": "topic_identifier",
+  "learning_objective": "objective_identifier",
+  "teaching_action": "ask_question",
+  "explanation": "A concise mathematical explanation.",
+  "current_step": {
+    "index": 1,
+    "expression": "validated mathematical expression",
+    "justification": "Why this step is valid"
+  },
+  "next_question": "A question that tests the student's understanding.",
+  "hint_available": true,
+  "visualization": {
+    "type": "bounded_region",
+    "parameters": {},
+    "annotations": []
+  },
+  "verification": {
+    "status": "not_required",
+    "message": null
+  },
+  "learner_evidence": {
+    "objective_id": "objective_identifier",
+    "evidence_level": "not_assessed",
+    "misconception_ids": []
+  }
+}
+
+This is an illustrative contract. Define the final schema with Pydantic, proper enumerations, and field-level validation.
+
+Use null values where information is unavailable. Never invent identifiers, verification results, or mastery evidence.
+
+The frontend must render these structured results using trusted components.
+
+Keep model instructions, curriculum context, and student-provided text logically separated. Treat uploaded documents and student messages as data, not as trusted system instructions.
+
+---
+
+## 9. API requirements
+
+Implement documented endpoints for:
+
+- Course and syllabus retrieval.
+- Syllabus upload and ingestion.
+- Curriculum approval and version management.
+- Topic and learning-objective retrieval.
+- Session creation and restoration.
+- Tutor turns.
+- Problem generation.
+- Guided solution steps.
+- Student step verification.
+- Mathematical verification.
+- Exercise submission.
+- Learner progress retrieval.
+- Voice session initialization.
+
+Use appropriate HTTP status codes, authentication, request validation, error responses, and rate limits.
+
+Make long-running document ingestion asynchronous if necessary, with visible processing states.
+
+Do not expose model API keys, database service-role credentials, or privileged instructor operations to the browser.
+
+---
+
+## 10. Problem-generation quality control
+
+Build a verification pipeline rather than trusting generated text.
+
+For each generated problem:
+
+1. Select an approved topic and learning objective.
+2. Construct a problem specification with constraints.
+3. Generate a candidate problem and proposed solution.
+4. Parse and validate the mathematical expressions.
+5. Run supported symbolic checks.
+6. Validate domain restrictions and assumptions.
+7. Check consistency between the question, answer, explanation, and visualization.
+8. Reject or repair invalid candidates.
+9. Save verified problems with their source and validation metadata.
+10. Present only valid, appropriately scoped problems as verified.
+
+Distinguish instructor-authored questions from AI-generated questions.
+
+Never claim that an AI-generated question is taken from an official MIT examination unless its source is verified.
+
+If a question cannot be verified automatically, route it to review or clearly label it as requiring verification.
+
+---
+
+## 11. Testing and acceptance criteria
+
+Write automated tests for the backend, frontend interactions, mathematical verification, syllabus ingestion, and tutor-state transitions.
+
+Include tests for:
+
+- Correct derivatives and integrals.
+- Equivalent mathematical expressions.
+- Incorrect integration bounds.
+- Valid and invalid reversed integration orders.
+- Singularities and domain restrictions.
+- Generated problems whose proposed answers are wrong.
+- Missing or ambiguous syllabus content.
+- Scanned or partially extracted syllabus documents.
+- Unauthorized curriculum approval.
+- Malformed model outputs.
+- Interrupted and resumed sessions.
+- Missing voice credentials.
+- Students switching between text and voice.
+- Learner progress that must not be marked mastered prematurely.
+
+### MVP acceptance criteria
+
+The application is ready for its first pilot when:
+
+1. A user can upload a syllabus and inspect the extracted curriculum.
+2. An authorized reviewer can approve and version the curriculum.
+3. A student can select a topic and begin a tutoring session.
+4. The tutor can explain a concept, ask questions, and adapt to an observed misconception.
+5. The student can generate a configurable set of standard problems.
+6. The student can request hints and reveal guided solutions step by step.
+7. Supported mathematical calculations are independently checked.
+8. The whiteboard can display relevant 2D mathematical visualizations.
+9. Voice interaction works where configured, with a reliable text fallback.
+10. Sessions and learning evidence persist across reloads.
+11. Invalid or unverified mathematics is not falsely presented as verified.
+12. The app has documented setup instructions and automated tests.
+
+Measure educational value using independent problem-solving performance, not just time spent in the application.
+
+---
+
+## 12. Development workflow
+
+Implement the product incrementally in the following order.
+
+### Phase 1: Foundation
+- Inspect the development environment.
+- Create the project structure.
+- Configure frontend, backend, environment variables, and database.
+- Build the main layout and topic navigation.
+- Add mock data only where necessary for UI development.
+
+### Phase 2: Curriculum intelligence
+- Implement syllabus upload and text extraction.
+- Define the curriculum schema.
+- Build extraction review and approval.
+- Add source references and syllabus versioning.
+- Prevent teaching from an unapproved draft as though it were authoritative.
+
+### Phase 3: Text-based tutor
+- Integrate a language model through a backend abstraction.
+- Implement structured tutor outputs.
+- Add the explicit teaching policy and learner state.
+- Support concept explanations and guided questions.
+
+### Phase 4: Mathematics and problems
+- Integrate SymPy.
+- Implement safe expression parsing and verification.
+- Build standard problem generation.
+- Add guided solutions and step-level checking.
+- Implement rejection and repair of invalid generated problems.
+
+### Phase 5: Interactive whiteboard
+- Render equations and derivations.
+- Plot supported curves and regions.
+- Synchronize visualization state with the current tutoring step.
+
+### Phase 6: Voice
+- Integrate a supported real-time voice interface.
+- Add interruption handling and transcript synchronization.
+- Preserve tutoring context across modality changes.
+
+### Phase 7: Validation and deployment
+- Write and run automated tests.
+- Test realistic student workflows.
+- Fix correctness and usability problems.
+- Configure secure deployment.
+- Document setup, limitations, and known failure cases.
+
+Do not implement every phase as a disconnected mockup. Keep the application runnable after each milestone.
+
+---
+
+## 13. Engineering principles
+
+Follow these rules throughout development:
+
+- Do not hardcode an entire syllabus into the tutoring prompt.
+- Do not confuse retrieval of a syllabus with actual comprehension of its structure.
+- Do not let the language model independently certify mathematical correctness.
+- Do not fabricate student performance, verification status, or curriculum sources.
+- Do not expose secrets in frontend code.
+- Do not use arbitrary executable code generated by the model for the whiteboard.
+- Do not build unnecessary microservices or multi-agent orchestration for the MVP.
+- Do not optimize for visual polish at the expense of learning correctness.
+- Keep all critical calculations and state transitions testable.
+- Keep the interface accessible, responsive, and understandable.
+- Use environment variables and provide an `.env.example` without real credentials.
+- Include database migrations, seed fixtures, setup documentation, and meaningful error handling.
+- Clearly distinguish demo fixtures from approved course data.
+- If a required external API is not configured, provide a clear setup message rather than falsely simulating successful AI or voice functionality.
+
+The professor or authorized instructor remains the final authority for curriculum approval and disputed mathematical interpretations.
+
+---
+
+## 14. Final instructions to the coding agent
+
+Begin by inspecting the existing project, if one exists.
+
+Then:
+
+1. Summarize the current project state and identify missing components.
+2. Present a concise implementation plan and key architectural decisions.
+3. Implement the application in the repository, prioritizing a functional vertical slice.
+4. Run the available tests and resolve failures.
+5. Document setup commands, environment variables, database configuration, and external API requirements.
+6. Clearly report which features are functional, which require credentials, and which remain incomplete.
+
+Do not stop after producing an architecture document, static UI, or pseudocode.
+
+If you have repository access and the required tools, create and modify the actual files. If a dependency, credential, or environment limitation prevents a feature from working, implement the appropriate interface and report the limitation accurately.
+
+**Definition of success:** A first-year engineering student can select their actual course, learn a topic, generate syllabus-aligned standard problems, receive guided mathematical solutions, interact with a visual representation, ask questions by voice or text, and demonstrate understanding through a new problem.
+
+Build for mathematical reliability, adaptive teaching, and independently verifiable learning outcomes. The AI is a teaching interface; the learning system, curriculum, and verification logic are the product.

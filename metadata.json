@@ -1,0 +1,8 @@
+{
+  "name": "MIT Calculus Tutor - AI Engineering Calculus Workspace",
+  "description": "Curriculum-aware AI Engineering Calculus Tutor for first-year engineering students with conceptual mastery, standard problem generation, guided solutions, interactive whiteboard visualization, syllabus intelligence, and voice tutoring.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
