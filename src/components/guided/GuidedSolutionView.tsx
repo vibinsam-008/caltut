@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   CalculusProblem,
   ProblemStep,
+  CourseCurriculum,
 } from '../../types';
 import { checkStepWithEngine } from '../../services/api';
 import { MathView } from '../MathView';
@@ -17,17 +18,28 @@ import {
   Compass,
   FileCheck2,
   BrainCircuit,
+  BookOpen,
+  Layers,
+  Sparkles,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface GuidedSolutionViewProps {
   problem: CalculusProblem;
+  curriculum?: CourseCurriculum;
+  activeUnitId?: string;
+  activeTopicId?: string;
+  onSelectLesson?: (unitId: string, topicId: string) => void;
   onSelectSimilarProblem?: (topicId: string) => void;
   onRecordResult?: (problemId: string, objectiveId: string, isCorrect: boolean, hintsUsed: number) => void;
 }
 
 export const GuidedSolutionView: React.FC<GuidedSolutionViewProps> = ({
   problem,
+  curriculum,
+  activeUnitId,
+  activeTopicId,
+  onSelectLesson,
   onSelectSimilarProblem,
   onRecordResult,
 }) => {
@@ -45,6 +57,29 @@ export const GuidedSolutionView: React.FC<GuidedSolutionViewProps> = ({
   const [isChecking, setIsChecking] = useState<boolean>(false);
   const [showFullSolution, setShowFullSolution] = useState<boolean>(false);
   const [completed, setCompleted] = useState<boolean>(false);
+
+  // Reset local state whenever active problem changes according to present lesson
+  useEffect(() => {
+    setCurrentStage(1);
+    setRevealedStepCount(1);
+    setHintsGiven(0);
+    setActiveHint(null);
+    setWhyExplanation(null);
+    setStudentInput('');
+    setStepFeedback(null);
+    setShowFullSolution(false);
+    setCompleted(false);
+  }, [problem.id]);
+
+  const currentUnit =
+    (activeUnitId && curriculum?.units.find((u) => u.id === activeUnitId)) ||
+    curriculum?.units.find((u) => u.topics.some((t) => t.id === problem.topicId)) ||
+    curriculum?.units[0];
+
+  const currentTopic =
+    (activeTopicId && currentUnit?.topics.find((t) => t.id === activeTopicId)) ||
+    currentUnit?.topics.find((t) => t.id === problem.topicId) ||
+    currentUnit?.topics[0];
 
   // Stages definition
   const stages = [
@@ -117,6 +152,63 @@ export const GuidedSolutionView: React.FC<GuidedSolutionViewProps> = ({
 
   return (
     <div className="flex flex-col gap-6 max-w-6xl mx-auto">
+      {/* Active Lesson Synchronization Banner */}
+      <div className="bg-slate-900 border-2 border-indigo-500/50 rounded-xl p-4 shadow-lg flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-slate-900 via-indigo-950/30 to-slate-900">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 flex-shrink-0">
+            <BookOpen className="w-5 h-5 text-indigo-400" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-mono text-indigo-400 uppercase font-bold tracking-wider">
+                Current Learning Lesson • {currentUnit?.title || 'Core Calculus'}
+              </span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
+                Synchronized
+              </span>
+            </div>
+            <h1 className="text-lg font-bold text-slate-100 mt-0.5">
+              {currentTopic?.title || problem.title}
+            </h1>
+            <p className="text-xs text-slate-400">
+              Practice problem, hints, and whiteboard visuals are dynamically paired to your active lesson.
+            </p>
+          </div>
+        </div>
+
+        {/* Quick Lesson Switcher */}
+        {curriculum && onSelectLesson && (
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-slate-400 font-semibold whitespace-nowrap hidden sm:inline">
+              Switch Practice Lesson:
+            </label>
+            <select
+              value={activeTopicId || ''}
+              onChange={(e) => {
+                const targetTopicId = e.target.value;
+                const foundUnit = curriculum.units.find((u) =>
+                  u.topics.some((t) => t.id === targetTopicId)
+                );
+                if (foundUnit) {
+                  onSelectLesson(foundUnit.id, targetTopicId);
+                }
+              }}
+              className="bg-slate-950 border border-slate-700 hover:border-indigo-500 text-slate-200 text-xs rounded-lg p-2 font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500 max-w-[280px] truncate cursor-pointer"
+            >
+              {curriculum.units.map((unit) => (
+                <optgroup key={unit.id} label={unit.title}>
+                  {unit.topics.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.title}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+
       {/* Problem Header Card */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
         <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800">

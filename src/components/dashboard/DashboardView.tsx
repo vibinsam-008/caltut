@@ -1,6 +1,6 @@
 import React from 'react';
 import { CourseCurriculum, LearnerState } from '../../types';
-import { VERIFIED_STANDARD_PROBLEMS } from '../../problem-bank/standard-problems';
+import { VERIFIED_STANDARD_PROBLEMS, findBestProblemForTopic } from '../../problem-bank/standard-problems';
 import { generateTopicPedagogy } from '../../curriculum/topic-pedagogy';
 import { MathView } from '../MathView';
 import {
@@ -49,46 +49,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const pedagogy = generateTopicPedagogy(activeTopic, activeUnit);
 
   // Match featured problem to current topic or unit
-  const matchedProblem =
-    VERIFIED_STANDARD_PROBLEMS.find((p) => {
-      if (!activeTopic && !activeUnit) return false;
-      const tTitle = (activeTopic?.title || '').toLowerCase();
-      const uTitle = (activeUnit?.title || '').toLowerCase();
-
-      if (
-        tTitle.includes('several variable') ||
-        tTitle.includes('extrema') ||
-        tTitle.includes('lagrange') ||
-        tTitle.includes('partial derivative') ||
-        uTitle.includes('several variable')
-      ) {
-        return p.id.includes('extrema') || p.id.includes('lagrange');
-      }
-      if (
-        tTitle.includes('eigen') ||
-        tTitle.includes('matrix') ||
-        tTitle.includes('matrices') ||
-        uTitle.includes('matrix') ||
-        uTitle.includes('matrices')
-      ) {
-        return p.id.includes('eigenvalues');
-      }
-      if (
-        tTitle.includes('beta') ||
-        tTitle.includes('gamma') ||
-        uTitle.includes('integral calculus')
-      ) {
-        return p.id.includes('beta-gamma');
-      }
-      if (
-        tTitle.includes('multiple') ||
-        tTitle.includes('order') ||
-        uTitle.includes('multiple integral')
-      ) {
-        return p.id.includes('double-int');
-      }
-      return false;
-    }) || VERIFIED_STANDARD_PROBLEMS[0];
+  const matchedProblem = findBestProblemForTopic(activeTopic, activeUnit, VERIFIED_STANDARD_PROBLEMS);
 
   return (
     <div className="flex flex-col gap-6 max-w-6xl mx-auto">

@@ -34,6 +34,7 @@ interface TutorWorkspaceProps {
   initialTopicId?: string;
   onNavigateToGuidedProblem?: (topicId: string) => void;
   onRecordResult?: (problemId: string, objectiveId: string, isCorrect: boolean, hintsUsed: number) => void;
+  onSelectLesson?: (unitId: string, topicId: string) => void;
 }
 
 export const TutorWorkspace: React.FC<TutorWorkspaceProps> = ({
@@ -42,6 +43,7 @@ export const TutorWorkspace: React.FC<TutorWorkspaceProps> = ({
   initialTopicId,
   onNavigateToGuidedProblem,
   onRecordResult,
+  onSelectLesson,
 }) => {
   // Determine initial unit and topic
   const initialUnit =
@@ -120,6 +122,7 @@ export const TutorWorkspace: React.FC<TutorWorkspaceProps> = ({
     setCurrentWhiteboardSpec(pedagogy.whiteboardSpec);
     setSelectedOption(null);
     setDiagnosticFeedback(null);
+    onSelectLesson?.(unit.id, topic.id);
   };
 
   // Send student prompt to tutor

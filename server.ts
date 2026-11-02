@@ -32,7 +32,6 @@ async function extractTextFromPdfBuffer(buffer: Buffer): Promise<{ text: string;
   try {
     const { PDFParse } = await import('pdf-parse');
     const parser = new PDFParse({ data: buffer });
-    await parser.load();
     const result = await parser.getText();
     return {
       text: result?.text || '',

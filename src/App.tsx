@@ -3,7 +3,7 @@ import { CourseCurriculum, CalculusProblem, LearnerState } from './types';
 import { OFFICIAL_MIT_CALCULUS_CURRICULUM } from './curriculum/mit-syllabus';
 import { curriculumManager } from './curriculum/curriculum-manager';
 import { teachingEngine } from './learner/learner-model';
-import { VERIFIED_STANDARD_PROBLEMS } from './problem-bank/standard-problems';
+import { VERIFIED_STANDARD_PROBLEMS, findBestProblemForTopic } from './problem-bank/standard-problems';
 import { Navigation, ActiveNavTab } from './components/Navigation';
 import { DashboardView } from './components/dashboard/DashboardView';
 import { TutorWorkspace } from './components/tutor/TutorWorkspace';
@@ -37,9 +37,11 @@ export default function App() {
   const [learnerState, setLearnerState] = useState<LearnerState>(
     teachingEngine.getState()
   );
-  const [activeProblem, setActiveProblem] = useState<CalculusProblem>(
-    VERIFIED_STANDARD_PROBLEMS[0]
-  );
+  const [activeProblem, setActiveProblem] = useState<CalculusProblem>(() => {
+    const firstUnit = curriculumManager.getActiveCurriculum().units[0];
+    const firstTopic = firstUnit?.topics[0];
+    return findBestProblemForTopic(firstTopic, firstUnit, VERIFIED_STANDARD_PROBLEMS);
+  });
   const [activeUnitId, setActiveUnitId] = useState<string>(
     curriculum.units[0]?.id || ''
   );
@@ -62,6 +64,21 @@ export default function App() {
     }
   }, []);
 
+  // Automatically synchronize active problem for Practice & Solutions to the present lesson
+  useEffect(() => {
+    const currentUnit =
+      (activeUnitId && curriculum.units.find((u) => u.id === activeUnitId)) ||
+      curriculum.units[0];
+    const currentTopic =
+      (activeTopicId && currentUnit?.topics.find((t) => t.id === activeTopicId)) ||
+      currentUnit?.topics[0];
+
+    if (currentTopic && currentUnit) {
+      const best = findBestProblemForTopic(currentTopic, currentUnit, VERIFIED_STANDARD_PROBLEMS);
+      setActiveProblem(best);
+    }
+  }, [curriculum.courseId, activeUnitId, activeTopicId]);
+
   const handleCurriculumUpdated = (newCurr: CourseCurriculum) => {
     curriculumManager.registerCurriculum(newCurr);
     curriculumManager.setActiveCurriculum(newCurr.courseId);
@@ -73,6 +90,8 @@ export default function App() {
     if (firstUnit && firstTopic) {
       setActiveUnitId(firstUnit.id);
       setActiveTopicId(firstTopic.id);
+      const matched = findBestProblemForTopic(firstTopic, firstUnit, VERIFIED_STANDARD_PROBLEMS);
+      setActiveProblem(matched);
     }
   };
 
@@ -93,6 +112,8 @@ export default function App() {
     if (firstUnit && firstTopic) {
       setActiveUnitId(firstUnit.id);
       setActiveTopicId(firstTopic.id);
+      const matched = findBestProblemForTopic(firstTopic, firstUnit, VERIFIED_STANDARD_PROBLEMS);
+      setActiveProblem(matched);
       if (firstObj) {
         teachingEngine.setTopic(firstUnit.id, firstTopic.id, firstObj.id);
         setLearnerState(teachingEngine.getState());
@@ -125,9 +146,13 @@ export default function App() {
     const topic = unit?.topics.find((t) => t.id === topicId);
     const obj = topic?.learningObjectives[0];
 
-    if (unit && topic && obj) {
-      teachingEngine.setTopic(unit.id, topic.id, obj.id);
-      setLearnerState(teachingEngine.getState());
+    if (unit && topic) {
+      const matched = findBestProblemForTopic(topic, unit, VERIFIED_STANDARD_PROBLEMS);
+      setActiveProblem(matched);
+      if (obj) {
+        teachingEngine.setTopic(unit.id, topic.id, obj.id);
+        setLearnerState(teachingEngine.getState());
+      }
     }
   };
 
@@ -198,10 +223,14 @@ export default function App() {
             curriculum={curriculum}
             initialUnitId={activeUnitId}
             initialTopicId={activeTopicId}
+            onSelectLesson={handleSelectLesson}
             onNavigateToGuidedProblem={(topicId) => {
-              const matched =
-                VERIFIED_STANDARD_PROBLEMS.find((p) => p.topicId === topicId) ||
-                VERIFIED_STANDARD_PROBLEMS[0];
+              const unit =
+                curriculum.units.find((u) => u.topics.some((t) => t.id === topicId)) ||
+                curriculum.units.find((u) => u.id === activeUnitId) ||
+                curriculum.units[0];
+              const topic = unit?.topics.find((t) => t.id === topicId) || unit?.topics[0];
+              const matched = findBestProblemForTopic(topic, unit, VERIFIED_STANDARD_PROBLEMS);
               setActiveProblem(matched);
               setActiveTab('guided');
             }}
@@ -230,10 +259,23 @@ export default function App() {
         {activeTab === 'guided' && (
           <GuidedSolutionView
             problem={activeProblem}
+            curriculum={curriculum}
+            activeUnitId={activeUnitId}
+            activeTopicId={activeTopicId}
+            onSelectLesson={handleSelectLesson}
             onSelectSimilarProblem={(topicId) => {
-              const next = VERIFIED_STANDARD_PROBLEMS.find(
-                (p) => p.topicId === topicId && p.id !== activeProblem.id
-              ) || VERIFIED_STANDARD_PROBLEMS[0];
+              const currentUnit =
+                (activeUnitId && curriculum.units.find((u) => u.id === activeUnitId)) ||
+                curriculum.units[0];
+              const currentTopic =
+                (topicId && currentUnit?.topics.find((t) => t.id === topicId)) ||
+                (activeTopicId && currentUnit?.topics.find((t) => t.id === activeTopicId)) ||
+                currentUnit?.topics[0];
+
+              const pool = VERIFIED_STANDARD_PROBLEMS.filter(
+                (p) => p.id !== activeProblem.id
+              );
+              const next = findBestProblemForTopic(currentTopic, currentUnit, pool);
               setActiveProblem(next);
             }}
             onRecordResult={handleRecordProblemResult}
